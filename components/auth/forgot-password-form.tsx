@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { resetPassword } from "@/app/actions/auth"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,16 +14,25 @@ export function ForgotPasswordForm() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
+    setError(null)
     
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get('email') as string
+
+    const result = await resetPassword(email)
+    
+    setIsLoading(true)
+    if (result.success) {
       setIsSubmitted(true)
-    }, 1500)
+    } else {
+      setError(result.error || "Failed to send reset link")
+    }
+    setIsLoading(false)
   }
 
   if (isSubmitted) {
@@ -56,12 +66,17 @@ export function ForgotPasswordForm() {
           Enter your email address and we'll send you a link to reset your password.
         </p>
       </div>
-      
       <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+            {error}
+          </div>
+        )}
         <div className="space-y-2 text-left">
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
+            name="email"
             type="email"
             placeholder="m@example.com"
             required
